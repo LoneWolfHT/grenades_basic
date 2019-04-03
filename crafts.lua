@@ -50,7 +50,7 @@ if not minetest.get_modpath("ctf_crafting") then
 else
 	crafting.register_recipe({
 		type   = "inv",
-		output = "ctf_grenades:grenade_regular 1",
+		output = "grenades_basic:regular 1",
 		items  = { "default:steel_ingot 5", "default:iron_lump" },
 		always_known = true,
 		level  = 1,
@@ -58,7 +58,7 @@ else
 
 	crafting.register_recipe({
 		type   = "inv",
-		output = "ctf_grenades:grenade_smoke 1",
+		output = "grenades_basic:smoke 1",
 		items  = { "default:steel_ingot 5", "default:coal_lump 4" },
 		always_known = true,
 		level  = 1,
@@ -66,15 +66,15 @@ else
 
 	crafting.register_recipe({
 		type   = "inv",
-		output = "ctf_grenades:grenade_flashbang 1",
+		output = "grenades_basic:flashbang 1",
 		items  = { "default:steel_ingot 5", "default:torch 5" },
 		always_known = true,
 		level  = 1,
 	})
 end
 
-if minetest.get_modpath("ctf_treasure") then
-	treasurer.register_treasure("ctf_grenades:grenade_regular", 0.4, 2, 1)
-	treasurer.register_treasure("ctf_grenades:grenade_smoke", 0.4, 2, 1)
-	treasurer.register_treasure("ctf_grenades:grenade_flashbang", 0.4, 2, 1)
+if minetest.get_modpath("treasurer") then
+	treasurer.register_treasure("grenades_basic:regular", 0.4, 2, 1)
+	treasurer.register_treasure("grenades_basic:smoke", 0.4, 2, 1)
+	treasurer.register_treasure("grenades_basic:flashbang", 0.4, 2, 1)
 end
