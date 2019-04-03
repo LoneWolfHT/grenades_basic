@@ -64,6 +64,7 @@ grenades.register_grenade("grenades_basic:regular", {
 grenades.register_grenade("grenades_basic:flashbang", {
 	description = "Flashbang grenade (Blinds all who look at blast)",
 	image = "grenades_flashbang.png",
+	clock = 4,
 	on_explode = function(pos)
 		for _, v in ipairs(minetest.get_objects_inside_radius(pos, 20)) do
 			local hit = minetest.raycast(pos, v:get_pos(), true, true):next()
@@ -110,8 +111,8 @@ grenades.register_grenade("grenades_basic:flashbang", {
 grenades.register_grenade("grenades_basic:smoke", {
 	description = "Smoke grenade (Generates smoke around blast site)",
 	image = "grenades_smoke_grenade.png",
+	clock = 2,
 	on_explode = function(pos)
-
 		minetest.sound_play("glasslike_break", {
 			pos = pos,
 			gain = 1.0,

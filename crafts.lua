@@ -72,3 +72,9 @@ else
 		level  = 1,
 	})
 end
+
+if minetest.get_modpath("ctf_treasure") then
+	treasurer.register_treasure("ctf_grenades:grenade_regular", 0.4, 2, 1)
+	treasurer.register_treasure("ctf_grenades:grenade_smoke", 0.4, 2, 1)
+	treasurer.register_treasure("ctf_grenades:grenade_flashbang", 0.4, 2, 1)
+end
