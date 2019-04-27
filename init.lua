@@ -51,7 +51,7 @@ grenades.register_grenade("grenades_basic:regular", {
 		for _, v in ipairs(minetest.get_objects_inside_radius(pos, radius)) do
 			local hit = minetest.raycast(pos, v:get_pos(), true, true):next()
 
-			if v:is_player() and v:get_hp() > 0 and hit.type == "object" and hit.ref:is_player() and
+			if hit and v:is_player() and v:get_hp() > 0 and hit.type == "object" and hit.ref:is_player() and
 			hit.ref:get_player_name() == v:get_player_name() then
 				v:punch(player, 2, {damage_groups = {fleshy = 26 - (vector.distance(pos, v:get_pos()) * 2)}}, nil)
 			end
@@ -71,7 +71,7 @@ grenades.register_grenade("grenades_basic:flashbang", {
 		for _, v in ipairs(minetest.get_objects_inside_radius(pos, 20)) do
 			local hit = minetest.raycast(pos, v:get_pos(), true, true):next()
 
-			if v:is_player() and v:get_hp() > 0 and not flash_huds[v:get_player_name()] and hit.type == "object" and
+			if hit and v:is_player() and v:get_hp() > 0 and not flash_huds[v:get_player_name()] and hit.type == "object" and
 			hit.ref:is_player() and hit.ref:get_player_name() == v:get_player_name() then
 				local playerdir = vector.round(v:get_look_dir())
 				local grenadedir = vector.round(vector.direction(v:get_pos(), pos))

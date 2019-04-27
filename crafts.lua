@@ -72,9 +72,3 @@ else
 		level  = 1,
 	})
 end
-
-if minetest.get_modpath("treasurer") then
-	treasurer.register_treasure("grenades_basic:regular", 0.4, 2, 1)
-	treasurer.register_treasure("grenades_basic:smoke", 0.4, 2, 1)
-	treasurer.register_treasure("grenades_basic:flashbang", 0.4, 2, 1)
-end
