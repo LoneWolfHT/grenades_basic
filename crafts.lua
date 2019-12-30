@@ -1,45 +1,9 @@
-if not minetest.get_modpath("ctf_crafting") then
-	-- Regular Grenade
+local gunpowder = "grenades_basic:gun_power"
 
-	minetest.register_craft({
-		type = "shaped",
-		output = "grenades_basic:regular",
-		recipe = {
-			{"", "default:steel_ingot", ""},
-			{"default:steel_ingot", "default:coal_lump", "default:steel_ingot"},
-			{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"}
-		},
-	})
-
-	-- Smoke Grenade
-
-	minetest.register_craft({
-		type = "shaped",
-		output = "grenades_basic:smoke",
-		recipe = {
-			{"", "default:steel_ingot", ""},
-			{"default:steel_ingot", "grenades_basic:gun_powder", "default:steel_ingot"},
-			{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"}
-		}
-	})
-
-	--Flashbang Grenade
-
-	minetest.register_craft({
-		type = "shaped",
-		output = "grenades_basic:flashbang",
-		recipe = {
-			{"", "default:steel_ingot", ""},
-			{"default:steel_ingot", "default:torch", "default:steel_ingot"},
-			{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"}
-		},
-	})
-
-	-- Other
-
+if not minetest.get_modpath("tnt") then
 	minetest.register_craftitem("grenades_basic:gun_powder", {
 		description = "A dark powder used for crafting some grenades",
-		inventory_image = "grenades_gun_powder.png"
+		inventory_image = "grenades_basic_gun_powder.png"
 	})
 
 	minetest.register_craft({
@@ -48,27 +12,41 @@ if not minetest.get_modpath("ctf_crafting") then
 		recipe = {"default:coal_lump", "default:coal_lump", "default:coal_lump", "default:coal_lump"},
 	})
 else
-	crafting.register_recipe({
-		type   = "inv",
-		output = "grenades_basic:regular 1",
-		items  = { "default:steel_ingot 5", "default:iron_lump" },
-		always_known = true,
-		level  = 1,
-	})
-
-	crafting.register_recipe({
-		type   = "inv",
-		output = "grenades_basic:smoke 1",
-		items  = { "default:steel_ingot 5", "default:coal_lump 4" },
-		always_known = true,
-		level  = 1,
-	})
-
-	crafting.register_recipe({
-		type   = "inv",
-		output = "grenades_basic:flashbang 1",
-		items  = { "default:steel_ingot 5", "default:torch 5" },
-		always_known = true,
-		level  = 1,
-	})
+	gunpowder = "tnt:gunpowder"
 end
+
+-- Frag Grenade
+
+minetest.register_craft({
+	type = "shaped",
+	output = "grenades_basic:frag",
+	recipe = {
+		{"default:obsidian_shard", "default:steel_ingot", "default:obsidian_shard"},
+		{"default:steel_ingot", gunpowder, "default:steel_ingot"},
+		{"default:obsidian_shard", "default:steel_ingot", "default:obsidian_shard"}
+	},
+})
+
+-- Smoke Grenade
+
+minetest.register_craft({
+	type = "shaped",
+	output = "grenades_basic:smoke",
+	recipe = {
+		{"default:coal_lump", "default:steel_ingot", "default:coal_lump"},
+		{"default:steel_ingot", gunpowder, "default:steel_ingot"},
+		{"default:coal_lump", "default:steel_ingot", "default:coal_lump"}
+	}
+})
+
+--Flashbang Grenade
+
+minetest.register_craft({
+	type = "shaped",
+	output = "grenades_basic:flashbang",
+	recipe = {
+		{"default:steel_ingot", "default:mese_crystal", "default:steel_ingot"},
+		{"default:steel_ingot", gunpowder, "default:steel_ingot"},
+		{"", "default:steel_ingot", ""}
+	},
+})

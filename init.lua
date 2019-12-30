@@ -1,17 +1,23 @@
-local function remove_flora(pos, radius)
+local function blast(pos, radius)
 	local pos1 = vector.subtract(pos, radius)
 	local pos2 = vector.add(pos, radius)
 
-	for _, p in ipairs(minetest.find_nodes_in_area(pos1, pos2, "group:flora")) do
+	for _, p in ipairs(minetest.find_nodes_in_area(pos1, pos2, {"group:flora", "group:dig_immediate"})) do
 		if vector.distance(pos, p) <= radius then
+			local node = minetest.get_node(p).name
+
+			if node ~= "air" then
+				minetest.add_item(p, node)
+			end
+
 			minetest.remove_node(p)
 		end
 	end
 end
 
-grenades.register_grenade("grenades_basic:regular", {
-	description = "Regular grenade (Kills anyone near blast)",
-	image = "grenades_regular.png",
+grenades.register_grenade("grenades_basic:frag", {
+	description = "Frag grenade (Kills anyone near blast)",
+	image = "grenades_basic_frag.png",
 	on_explode = function(pos, name)
 		if not name or not pos then
 			return
@@ -37,23 +43,37 @@ grenades.register_grenade("grenades_basic:regular", {
 			collisiondetection = true,
 			collision_removal = false,
 			vertical = false,
-			texture = "grenades_smoke.png",
+			texture = "grenades_basic_smoke.png",
 		})
 
-		minetest.sound_play("boom", {
+		minetest.add_particle({
+			pos = pos,
+			velocity = {x=0, y=0, z=0},
+			acceleration = {x=0, y=0, z=0},
+			expirationtime = 0.3,
+			size = 15,
+			collisiondetection = false,
+			collision_removal = false,
+			object_collision = false,
+			vertical = false,
+			texture = "grenades_basic_boom.png",
+			glow = 10
+		})
+
+		minetest.sound_play("grenades_basic_explode", {
 			pos = pos,
 			gain = 1.0,
-			max_hear_distance = 32,
+			max_hear_distance = 64,
 		})
 
-		remove_flora(pos, radius)
+		blast(pos, radius/2)
 
 		for _, v in ipairs(minetest.get_objects_inside_radius(pos, radius)) do
 			local hit = minetest.raycast(pos, v:get_pos(), true, true):next()
 
 			if hit and v:is_player() and v:get_hp() > 0 and hit.type == "object" and hit.ref:is_player() and
 			hit.ref:get_player_name() == v:get_player_name() then
-				v:punch(player, 2, {damage_groups = {fleshy = 26 - (vector.distance(pos, v:get_pos()) * 2)}}, nil)
+				v:punch(player, 2, {damage_groups = {grenade = 1, fleshy = 90 * 0.71 ^ vector.distance(pos, v:get_pos())}}, nil)
 			end
 		end
 	end,
@@ -65,7 +85,7 @@ local flash_huds = {}
 
 grenades.register_grenade("grenades_basic:flashbang", {
 	description = "Flashbang grenade (Blinds all who look at blast)",
-	image = "grenades_flashbang.png",
+	image = "grenades_basic_flashbang.png",
 	clock = 4,
 	on_explode = function(pos)
 		for _, v in ipairs(minetest.get_objects_inside_radius(pos, 20)) do
@@ -77,7 +97,7 @@ grenades.register_grenade("grenades_basic:flashbang", {
 				local grenadedir = vector.round(vector.direction(v:get_pos(), pos))
 				local pname = v:get_player_name()
 
-				minetest.sound_play("glasslike_break", {
+				minetest.sound_play("grenades_basic_glasslike_break", {
 					pos = pos,
 					gain = 1.0,
 					max_hear_distance = 32,
@@ -92,7 +112,7 @@ grenades.register_grenade("grenades_basic:flashbang", {
 							position = {x = 0, y = 0},
 							name = "flashbang hud "..pname,
 							scale = {x = -200, y = -200},
-							text = "grenades_white.png^[opacity:"..tostring(255 - (i * 20)),
+							text = "default_cloud.png^[colorize:white:255^[opacity:"..tostring(255 - (i * 20)),
 							alignment = {x = 0, y = 0},
 							offset = {x = 0, y = 0}
 						})
@@ -132,48 +152,62 @@ minetest.register_on_dieplayer(function(player)
 	end
 end)
 
+minetest.register_on_dieplayer(function(player)
+	local name = player:get_player_name()
+
+	if flash_huds[name] then
+		for _, v in ipairs(flash_huds[name]) do
+			player:hud_remove(v)
+		end
+
+		flash_huds[name] = nil
+	end
+end)
+
 -- Smoke Grenade
 
 grenades.register_grenade("grenades_basic:smoke", {
 	description = "Smoke grenade (Generates smoke around blast site)",
-	image = "grenades_smoke_grenade.png",
-	clock = 2,
+	image = "grenades_basic_smoke_grenade.png",
 	on_explode = function(pos)
-		minetest.sound_play("glasslike_break", {
+		minetest.sound_play("grenades_basic_glasslike_break", {
 			pos = pos,
 			gain = 1.0,
 			max_hear_distance = 32,
 		})
 
-		minetest.sound_play("hiss", {
+		local hiss = minetest.sound_play("grenades_basic_hiss", {
 			pos = pos,
 			gain = 1.0,
+			loop = true,
 			max_hear_distance = 32,
 		})
+
+		minetest.after(40, minetest.sound_stop, hiss)
 
 		for i = 0, 5, 1 do
 			minetest.add_particlespawner({
-				amount = 30,
-				time = 11,
-				minpos = vector.subtract(pos, 3),
-				maxpos = vector.add(pos, 3),
+				amount = 40,
+				time = 45,
+				minpos = vector.subtract(pos, 2),
+				maxpos = vector.add(pos, 2),
 				minvel = {x = 0, y = 2, z = 0},
 				maxvel = {x = 0, y = 3, z = 0},
 				minacc = {x = 1, y = 0.2, z = 1},
 				maxacc = {x = 1, y = 0.2, z = 1},
-				minexptime = 0.3,
-				maxexptime = 0.5,
-				minsize = 90,
-				maxsize = 100,
+				minexptime = 1,
+				maxexptime = 1,
+				minsize = 125,
+				maxsize = 140,
 				collisiondetection = false,
 				collision_removal = false,
 				vertical = false,
-				texture = "grenades_smoke.png",
+				texture = "grenades_basic_smoke.png",
 			})
 		end
 	end,
 	particle = {
-		image = "grenades_smoke.png",
+		image = "grenades_basic_smoke.png",
 		life = 1,
 		size = 4,
 		glow = 0,
