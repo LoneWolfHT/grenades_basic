@@ -68,11 +68,12 @@ grenades.register_grenade("grenades_basic:frag", {
 
 		blast(pos, radius/2)
 
-		for _, obj in ipairs(minetest.get_objects_inside_radius(pos, radius)) do
-			local hit = minetest.line_of_sight(pos, obj:get_pos())
+		for _, obj in pairs(minetest.get_objects_inside_radius(pos, radius)) do
+			local objpos = obj:get_pos()
+			local hit = minetest.line_of_sight(pos, objpos)
 
 			if hit ~= false and obj:get_hp() > 0 and not obj:get_luaentity().name:find("builtin") then
-				obj:punch(player, 2, {damage_groups = {grenade = 1, fleshy = 90 * 0.71 ^ vector.distance(pos, obj:get_pos())}}, nil)
+				obj:punch(player, 2, {damage_groups = {grenade = 1, fleshy = 90 * 0.71 ^ vector.distance(pos, objpos)}}, vector.direction(pos, objpos))
 			end
 		end
 	end,
