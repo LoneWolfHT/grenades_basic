@@ -2,7 +2,10 @@ local function blast(pos, radius)
 	local pos1 = vector.subtract(pos, radius)
 	local pos2 = vector.add(pos, radius)
 
-	for _, p in ipairs(minetest.find_nodes_in_area(pos1, pos2, {"group:flora", "group:dig_immediate"})) do
+	for _, p in ipairs(minetest.find_nodes_in_area(pos1, pos2, {
+		"group:flora", "group:mushroom", "default:snow",
+		"group:grenade_breakable", "group:dig_immediate"
+	})) do
 		if vector.distance(pos, p) <= radius then
 			local node = minetest.get_node(p).name
 
@@ -15,17 +18,49 @@ local function blast(pos, radius)
 	end
 end
 
+local function check_hit(pos1, pos2, obj)
+	local ray = minetest.raycast(pos1, pos2, true, false)
+	local hit = ray:next()
+
+	-- Skip over non-normal nodes like ladders, water, doors, glass, leaves, etc
+	-- Also skip over all objects that aren't the target
+	-- Any collisions within a 1 node distance from the target don't stop the grenade
+	while hit and (
+		(
+		 hit.type == "node"
+		 and
+		 (
+			hit.intersection_point:distance(pos2) <= 1
+			or
+			not minetest.registered_nodes[minetest.get_node(hit.under).name].walkable
+		 )
+		)
+		or
+		(
+		 hit.type == "object" and hit.ref ~= obj
+		)
+	) do
+		hit = ray:next()
+	end
+
+	if hit and hit.type == "object" and hit.ref == obj then
+		return true
+	end
+end
 grenades.register_grenade("grenades_basic:frag", {
 	description = "Frag grenade (Kills anyone near blast)",
 	image = "grenades_basic_frag.png",
-	on_explode = function(pos, name)
+	explode_radius = 6,
+	explode_damage = 26,
+	on_explode = function(def, obj, pos, name)
 		if not name or not pos then
 			return
 		end
 
 		local player = minetest.get_player_by_name(name)
+		if not player then return end
 
-		local radius = 6
+		local radius = def.explode_radius
 
 		minetest.add_particlespawner({
 			amount = 20,
@@ -68,108 +103,41 @@ grenades.register_grenade("grenades_basic:frag", {
 
 		blast(pos, radius/2)
 
-		for _, obj in pairs(minetest.get_objects_inside_radius(pos, radius)) do
-			local objpos = obj:get_pos()
-			local hit = minetest.line_of_sight(pos, objpos)
+		for _, v in pairs(minetest.get_objects_inside_radius(pos, radius)) do
+			if v:get_hp() > 0 and (not v:get_luaentity() or not v:get_luaentity().name:find("builtin")) then
+				local footpos = vector.offset(v:get_pos(), 0, 0.1, 0)
+				local headpos = vector.offset(v:get_pos(), 0, v:get_properties().eye_height, 0)
+				local footdist = vector.distance(pos, footpos)
+				local headdist = vector.distance(pos, headpos)
+				local target_head = false
 
-			if hit ~= false and obj:get_hp() > 0 and not obj:get_luaentity().name:find("builtin") then
-				obj:punch(player, 2, {damage_groups = {grenade = 1, fleshy = 90 * 0.71 ^ vector.distance(pos, objpos)}}, vector.direction(pos, objpos))
-			end
-		end
-	end,
-})
-
--- Flashbang Grenade
-
-local flash_huds = {}
-
-grenades.register_grenade("grenades_basic:flashbang", {
-	description = "Flashbang grenade (Blinds all who look at blast)",
-	image = "grenades_basic_flashbang.png",
-	clock = 4,
-	on_explode = function(pos)
-		for _, v in ipairs(minetest.get_objects_inside_radius(pos, 20)) do
-			local hit = minetest.raycast(pos, v:get_pos(), true, true):next()
-
-			if hit and v:is_player() and v:get_hp() > 0 and not flash_huds[v:get_player_name()] and hit.type == "object" and
-			hit.ref:is_player() and hit.ref:get_player_name() == v:get_player_name() then
-				local playerdir = vector.round(v:get_look_dir())
-				local grenadedir = vector.round(vector.direction(v:get_pos(), pos))
-				local pname = v:get_player_name()
-
-				minetest.sound_play("grenades_basic_glasslike_break", {
-					pos = pos,
-					gain = 1.0,
-					max_hear_distance = 32,
-				})
-
-				if math.acos(playerdir.x*grenadedir.x + playerdir.y*grenadedir.y + playerdir.z*grenadedir.z) <= math.pi/4 then
-					flash_huds[pname] = {}
-
-					for i = 0, 5, 1 do
-						local key = v:hud_add({
-							hud_elem_type = "image",
-							position = {x = 0, y = 0},
-							name = "flashbang hud "..pname,
-							scale = {x = -200, y = -200},
-							text = "default_cloud.png^[colorize:white:255^[opacity:"..tostring(255 - (i * 20)),
-							alignment = {x = 0, y = 0},
-							offset = {x = 0, y = 0}
-						})
-
-						flash_huds[pname][i+1] = key
-
-						minetest.after(2 * i, function()
-							if minetest.get_player_by_name(pname) then
-								minetest.get_player_by_name(pname):hud_remove(key)
-
-								if flash_huds[pname] then
-									table.remove(flash_huds[pname], 1)
-								end
-
-								if i == 5 then
-									flash_huds[pname] = nil
-								end
-							end
-						end)
-					end
+				if footdist >= headdist then
+					target_head = true
 				end
 
+				local hit_pos1 = check_hit(pos, target_head and headpos or footpos, v)
+
+				-- Check the closest distance, but if that fails try targeting the farther one
+				if hit_pos1 or check_hit(pos, target_head and footpos or headpos, v) then
+					v:punch(player, 1, {
+						punch_interval = 1,
+						damage_groups = {
+							grenade = 1,
+							fleshy = def.explode_damage - ( (radius/3) * (target_head and headdist or footdist) )
+						}
+					}, vector.direction(pos, footpos))
+				end
 			end
 		end
 	end,
 })
-
-minetest.register_on_dieplayer(function(player)
-	local name = player:get_player_name()
-
-	if flash_huds[name] then
-		for _, v in ipairs(flash_huds[name]) do
-			player:hud_remove(v)
-		end
-
-		flash_huds[name] = nil
-	end
-end)
-
-minetest.register_on_dieplayer(function(player)
-	local name = player:get_player_name()
-
-	if flash_huds[name] then
-		for _, v in ipairs(flash_huds[name]) do
-			player:hud_remove(v)
-		end
-
-		flash_huds[name] = nil
-	end
-end)
 
 -- Smoke Grenade
 
 grenades.register_grenade("grenades_basic:smoke", {
 	description = "Smoke grenade (Generates smoke around blast site)",
 	image = "grenades_basic_smoke_grenade.png",
-	on_explode = function(pos)
+	on_explode = function(def, obj, pos)
 		minetest.sound_play("grenades_basic_glasslike_break", {
 			pos = pos,
 			gain = 1.0,

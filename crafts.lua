@@ -38,15 +38,3 @@ minetest.register_craft({
 		{"default:coal_lump", "default:steel_ingot", "default:coal_lump"}
 	}
 })
-
---Flashbang Grenade
-
-minetest.register_craft({
-	type = "shaped",
-	output = "grenades_basic:flashbang",
-	recipe = {
-		{"default:steel_ingot", "default:mese_crystal", "default:steel_ingot"},
-		{"default:steel_ingot", gunpowder, "default:steel_ingot"},
-		{"", "default:steel_ingot", ""}
-	},
-})
